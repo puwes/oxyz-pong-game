@@ -1,5 +1,7 @@
 # oxyz-pong-game
-Created by OCEAN AI for OCEAN Creator Challenge. 
+Created by OCEAN AI for OCEAN Creator Challenge.
+
+https://ocean.o.xyz/
 
 # prompts
 
