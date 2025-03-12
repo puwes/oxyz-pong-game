@@ -3,37 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OXYZ Pong Game</title>
+    <title>O.XYZ Pong Game</title>
     <style>
         body {
-            background-color: #f0f0f0;
+            background-color: #fff;
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            font-family: "Neue Machina", sans-serif;
             height: 95vh;
-            font-family: sans-serif;
         }
-        .title{
-            margin-bottom: 20px;
-            font-size: 32px;
-            font-weight: 700;
+
+        .title {
+            margin-bottom: 50px;
+            text-align: center;
+            font-size: 36px;
         }
+
         #gameCanvas {
             border: 1px solid #000;
         }
-        .footer{
+
+        .footer {
+            margin-top: 12px;
             display: flex;
             width: 800px;
             justify-content: space-between;
         }
     </style>
+    <link href="https://db.onlinewebfonts.com/c/4c4a87973ef80fc72049e01b9085fadc?family=ABC+Diatype" rel="stylesheet">
 </head>
 <body>
-<div class="title">OXYZ PONG GAME</div>
-<div class="game-container">
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+<div class="title">
+    <img src="OXYZ_LOGO.png" width="300px">
+    <div class="header">PONG GAME</div>
 </div>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
 <div class="footer">
     <div class="player-one-controls">
         <div>W - move UP</div>
@@ -47,11 +53,16 @@
         <div>↓ - move DOWN</div>
     </div>
 </div>
-
 <script>
     // Get the canvas element
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+
+    // Create a new canvas for the pattern
+    let patternCanvas = document.createElement('canvas');
+    patternCanvas.width = 20;
+    patternCanvas.height = 20;
+    let patternCtx = patternCanvas.getContext('2d');
 
     // Set the canvas dimensions
     canvas.width = 800;
@@ -60,16 +71,16 @@
     // Define the game variables
     let ballX = canvas.width / 2;
     let ballY = canvas.height / 2;
-    let ballSpeedX = 5 / 1.5;
-    let ballSpeedY = 5 / 1.5;
+    let ballSpeedX = 5 / 1.5; // Reduce the speed of the ball by 1.5 times
+    let ballSpeedY = 5 / 1.5; // Reduce the speed of the ball by 1.5 times
     let paddle1Y = canvas.height / 2;
     let paddle2Y = canvas.height / 2;
     let score1 = 0;
     let score2 = 0;
-    let roundStartTime = 0; // Track the start time of the round
+    let roundStartTime = 0; // Store the start time of the round
     let ballFrozen = true; // Flag to indicate if the ball is frozen
-    let speedIncreaseInterval = 5000; // Interval for speed increase (5 seconds)
-    let lastSpeedIncrease = 0; // Track the last time the speed was increased
+    let freezeTimeoutId = 0; // Store the timeout ID for the ball freeze
+    let gameStarted = false; // Flag to indicate if the game has started
 
     // Draw the game elements
     function draw() {
@@ -77,9 +88,15 @@
         ctx.fillStyle = '#000';
         ctx.fillRect(0, paddle1Y - 50, 10, 100);
         ctx.fillRect(canvas.width - 10, paddle2Y - 50, 10, 100);
-        ctx.beginPath();
-        ctx.arc(ballX, ballY, 10, 0, Math.PI * 2);
-        ctx.fill();
+
+        // Draw the ball using the pattern
+        if (pattern) {
+            ctx.fillStyle = pattern;
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
         ctx.font = '24px Arial';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
@@ -89,16 +106,23 @@
         ctx.fillText(`Score: ${score2}`, canvas.width - 10, 10);
     }
 
+    // Load the image
+    let ballImage = new Image();
+    ballImage.src = 'Logo_Black.png'; // Replace with the URL of your image
+    let pattern = null;
+    ballImage.onload = function () {
+        patternCtx.drawImage(ballImage, 0, 0, 20, 20);
+
+        // Create a pattern from the new canvas
+        pattern = ctx.createPattern(patternCanvas, 'repeat');
+
+        // Call the draw function
+        draw();
+    }
+
     // Update the game state
     function update() {
-        if (ballFrozen) {
-            // If the ball is frozen, check if the freeze time has expired
-            if (Date.now() - roundStartTime > 1000 && Date.now() - roundStartTime < 2000) {
-                // If the freeze time has expired, unfreeze the ball
-                ballFrozen = false;
-            }
-        } else {
-            // If the ball is not frozen, update its position
+        if (gameStarted && !ballFrozen) {
             ballX += ballSpeedX;
             ballY += ballSpeedY;
 
@@ -119,27 +143,31 @@
                 score2++;
                 ballX = canvas.width / 2;
                 ballY = canvas.height / 2;
-                roundStartTime = Date.now(); // Reset the round start time
-                ballFrozen = true; // Freeze the ball
-                ballSpeedX = 5 / 1.5; // Reset the ball speed
-                ballSpeedY = 5 / 1.5;
-                lastSpeedIncrease = 0; // Reset the last speed increase time
+                ballFrozen = true;
+                freezeTimeoutId = setTimeout(() => {
+                    ballFrozen = false;
+                    roundStartTime = Date.now();
+                    ballSpeedX = 5 / 1.5;
+                    ballSpeedY = 5 / 1.5;
+                }, 1000 + Math.random() * 1000); // Freeze the ball for 1-2 seconds
             } else if (ballX > canvas.width) {
                 score1++;
                 ballX = canvas.width / 2;
                 ballY = canvas.height / 2;
-                roundStartTime = Date.now(); // Reset the round start time
-                ballFrozen = true; // Freeze the ball
-                ballSpeedX = 5 / 1.5; // Reset the ball speed
-                ballSpeedY = 5 / 1.5;
-                lastSpeedIncrease = 0; // Reset the last speed increase time
+                ballFrozen = true;
+                freezeTimeoutId = setTimeout(() => {
+                    ballFrozen = false;
+                    roundStartTime = Date.now();
+                    ballSpeedX = 5 / 1.5;
+                    ballSpeedY = 5 / 1.5;
+                }, 1000 + Math.random() * 1000); // Freeze the ball for 1-2 seconds
             }
 
             // Increase the ball speed every 5 seconds
-            if (Date.now() - lastSpeedIncrease > speedIncreaseInterval) {
+            if (Date.now() - roundStartTime >= 5000) {
                 ballSpeedX *= 1.2;
                 ballSpeedY *= 1.2;
-                lastSpeedIncrease = Date.now();
+                roundStartTime = Date.now();
             }
 
             // Check for game over
@@ -147,36 +175,43 @@
                 alert(`Game Over! Player ${score1 > score2 ? 1 : 2} wins!`);
                 score1 = 0;
                 score2 = 0;
+                ballX = canvas.width / 2;
+                ballY = canvas.height / 2;
+                ballSpeedX = 5 / 1.5;
+                ballSpeedY = 5 / 1.5;
+                ballFrozen = true;
+                freezeTimeoutId = setTimeout(() => {
+                    ballFrozen = false;
+                    roundStartTime = Date.now();
+                    ballSpeedX = 5 / 1.5;
+                    ballSpeedY = 5 / 1.5;
+                }, 1000 + Math.random() * 1000); // Freeze the ball for 1-2 seconds
+                gameStarted = false;
             }
         }
     }
 
-    // Handle the start of a new round
-    function startRound() {
-        roundStartTime = Date.now();
-        ballFrozen = true;
-        ballX = canvas.width / 2;
-        ballY = canvas.height / 2;
-        ballSpeedX = 5 / 1.5;
-        ballSpeedY = 5 / 1.5;
-        lastSpeedIncrease = 0;
-        document.getElementById('startControls').remove()
-    }
-
     // Handle keyboard input
     document.addEventListener('keydown', (e) => {
-        console.log(`Key pressed: ${e.key}`);
         if (e.key === 'ArrowUp') {
-            paddle2Y = Math.max(paddle2Y - 20, 50);
+            paddle2Y = Math.max(paddle2Y - 20, 50); // Ensure paddle1 stays within boundaries
         } else if (e.key === 'ArrowDown') {
-            paddle2Y = Math.min(paddle2Y + 20, canvas.height - 50);
-        } else if (e.key === 'w' || e.key === 'W') {
-            paddle1Y = Math.max(paddle1Y - 20, 50);
-        } else if (e.key === 's' || e.key === 'S') {
-            paddle1Y = Math.min(paddle1Y + 20, canvas.height - 50);
-        } else if (e.key === ' ' ) {
-            // Call the startRound function when the game starts
-            startRound();
+            paddle2Y = Math.min(paddle2Y + 20, canvas.height - 50); // Ensure paddle1 stays within boundaries
+        } else if (e.key === 'w') {
+            paddle1Y = Math.max(paddle1Y - 20, 50); // Ensure paddle2 stays within boundaries
+        } else if (e.key === 's') {
+            paddle1Y = Math.min(paddle1Y + 20, canvas.height - 50); // Ensure paddle2 stays within boundaries
+        } else if (e.key === ' ') {
+            if (!gameStarted) {
+                gameStarted = true;
+                ballFrozen = true;
+                freezeTimeoutId = setTimeout(() => {
+                    ballFrozen = false;
+                    roundStartTime = Date.now();
+                    ballSpeedX = 5 / 1.5;
+                    ballSpeedY = 5 / 1.5;
+                }, 1000 + Math.random() * 1000); // Freeze the ball for 1-2 seconds
+            }
         }
     });
 
